@@ -375,6 +375,9 @@ GST_GOOD_MESON_ARGS += \
 	-Dy4m=enabled \
 	-Dadaptivedemux2=enabled \
 	-Djpeg=enabled \
+	-Drtsp=enabled \
+	-Drtp=enabled \
+	-Drtpmanager=enabled \
 
 GST_GOOD_DEPENDS = gst_orc gstreamer gst_base libsoup
 GST_GOOD_HOST_DEPENDS = gst_orc
