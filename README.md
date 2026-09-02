@@ -1,11 +1,11 @@
 # proton-cachyos-rtsp
 
-**CachyOS Proton, plus the Proton-RTSP media patchset — so RTSP and other live
-streams play in VRChat without breaking normal video playback.**
+**CachyOS Proton plus the Proton-RTSP media patchset. 
+So RTSP and other live streams play in VRChat without breaking normal video playback.**
 
-This is a merge of two existing projects. **Almost none of the work here is mine.**
-See [Credits](#credits) — please go star and support the people who actually built
-all of this.
+This is a merge of two existing projects. **Pretty much none of the work here is mine.**
+See [Credits](#credits) 
+Please go star and support the people who actually built all of this.
 
 ---
 
@@ -20,20 +20,20 @@ their Wine patches, scheduler and thread-priority work, DXVK/VKD3D variants,
 `dxvk-sarek`, `d7vk`, low-latency layers, FEX, NVIDIA libraries, protonfixes and much
 more.
 
-Huge thanks to the CachyOS team and to everyone whose patches land in their Wine tree —
-including **Etaash Mathamsetty**, **Stelios Tsampas** (loathingkernel), **M0n7y5**,
+Huge thanks to the CachyOS team and to everyone whose patches land in their Wine tree.
+Including **Etaash Mathamsetty**, **Stelios Tsampas** (loathingkernel), **M0n7y5**,
 **NelloKudo**, **Rémi Bernon**, **Paul Gofman**, and many others.
 
 CachyOS Proton is itself built on **[Valve's Proton](https://github.com/ValveSoftware/Proton)**
-and **[Wine](https://www.winehq.org/)** — thanks to Valve, CodeWeavers, and the Wine
-project.
+and **[Wine](https://www.winehq.org/)**
+Thanks to Valve, CodeWeavers, and the Wine project.
 
 ### Proton-RTSP — the streaming support
 
 The RTSP/live-media support is
 **[SpookySkeletons/proton-rtsp](https://github.com/SpookySkeletons/proton-rtsp)**.
-Thanks to **SpookySkeletons** for maintaining, rebasing and packaging the patchset, and
-for doing the work that makes livestreams play in VRChat at all.
+Thanks to **SpookySkeletons** for maintaining, rebasing and packaging the patchset, and 
+for doing the work that makes VRCDN livestreams play in VRChat at all.
 
 The media patchset itself is overwhelmingly the work of **Torge Matthies / Reyka
 Matthies** ([openglfreak](https://github.com/openglfreak)) — 69 of the 72 commits.
@@ -41,8 +41,8 @@ Also **zhineng cao** (the `qcap` webcam fixes behind VRChat desktop selfie / upp
 tracking) and **kazu0617**. The superproject `enable rtsp` change is by
 **BabbleBones**.
 
-**If you only use one of these, use theirs, not mine.** This repo exists solely because
-I wanted CachyOS's optimizations *and* Spooky's RTSP support in a single build.
+This repo exists solely because I wanted CachyOS's optimizations *and* Spooky's RTSP support in a single build.
+Claude helped to achieve that. This repo stands on the shoulders of giants.
 
 ---
 
@@ -122,34 +122,6 @@ Some of the bundled projects and their own documentation:
 - [dxvk-low-latency](https://github.com/netborg-afps/dxvk-low-latency#dxvk-low-latency)
 - [vkd3d-low-latency](https://github.com/netborg-afps/vkd3d-low-latency#vkd3d-low-latency)
 
----
-
-## About CPU optimization (`x86_64` vs `v3`)
-
-**These builds are plain `x86_64` and run on any 64-bit CPU.** They are compiled with
-`-O3 -march=nocona -mtune=core-avx2` — byte-for-byte the same flags CachyOS uses for
-their recommended `x86_64` release.
-
-A few things worth knowing, because this is easy to get wrong:
-
-- **Running CachyOS does not make a Proton build v3.** Even on a system using the
-  `cachyos-v3` repos, the `proton-cachyos-slr` package comes from the plain `[cachyos]`
-  repo and is a baseline build. The v3 repos don't carry Proton at all.
-- **Building it yourself does not automatically optimize for your CPU.** The
-  architecture flags are pinned in `Makefile.in`; you'd have to override `CFLAGS`
-  explicitly.
-- **A v3 build gains less than you'd expect.** `Makefile.in` unconditionally appends
-  `-mno-avx -mno-avx2 -mno-avx512f` *after* `-march=`, so AVX2 — the headline feature of
-  x86-64-v3 — is disabled even in CachyOS's own v3 build. What's left is SSE4.x, POPCNT,
-  BMI1/2, LZCNT and MOVBE. Their v3 job also keeps Rust at `-Ctarget-cpu=nocona`.
-
-If you want a v3 build anyway, CachyOS's own release settings are:
-
-```bash
-CFLAGS="-O3 -march=x86-64-v3 -mtune=core-avx2" \
-RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=nocona" \
-../proton-cachyos-rtsp/configure.sh --container-engine=podman --build-name=my_build
-```
 
 ---
 
