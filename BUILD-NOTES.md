@@ -15,6 +15,29 @@ Started 2026-09-02. Working dir: `/home/wunder/Projects/cachyosProtonRTSP`.
    CachyOS's value here is its *non-media* optimizations.
 3. Build is for VRChat specifically, with the user's own launch flags.
 
+## Published forks
+
+| what | repo | branch | tag |
+|---|---|---|---|
+| superproject | <https://github.com/wundervrc/proton-cachyos-rtsp> | `cachyos-rtsp` | `cachyos-rtsp-built-20260902` |
+| wine | <https://github.com/wundervrc/wine-cachyos-rtsp> | `rtsp-merge` | `cachyos-rtsp-built-20260902` |
+
+Both are public forks of the CachyOS repos, so upstream history is intact and our work sits
+on top as normal commits. `.gitmodules` in the superproject points `wine` at the
+**wine-cachyos-rtsp** fork, so a fresh `git clone --recurse-submodules` of the superproject
+gets the RTSP wine, not CachyOS's stock wine.
+
+To rebuild from scratch on another machine:
+
+```bash
+git clone --recurse-submodules https://github.com/wundervrc/proton-cachyos-rtsp.git
+cd proton-cachyos-rtsp && git checkout cachyos-rtsp-built-20260902
+mkdir ../build && cd ../build
+../proton-cachyos-rtsp/configure.sh --container-engine=podman --enable-ccache \
+    --build-name=proton-cachyos-rtsp
+make -j$(nproc) && make install
+```
+
 ## Layout
 
 ```
