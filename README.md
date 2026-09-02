@@ -1,344 +1,189 @@
-Introduction
-------------
+# proton-cachyos-rtsp
 
-**Proton** is a tool for use with the Steam client which allows games which are
-exclusive to Windows to run on the Linux operating system. It uses Wine to
-facilitate this.
+**CachyOS Proton, plus the Proton-RTSP media patchset — so RTSP and other live
+streams play in VRChat without breaking normal video playback.**
 
-**Most users should use Proton provided by the Steam Client itself.** See
-[this Steam Community post][steam-play-introduction] for more details.
+This is a merge of two existing projects. **Almost none of the work here is mine.**
+See [Credits](#credits) — please go star and support the people who actually built
+all of this.
 
-The source code is provided to enable advanced users the ability to alter
-Proton. For example, some users may wish to use a different version of Wine
-with a particular title.
+---
 
-**The changelog** is available on [our wiki][changelog].
+## Credits
 
-[steam-play-introduction]: https://steamcommunity.com/games/221410/announcements/detail/1696055855739350561
-[changelog]: https://github.com/ValveSoftware/Proton/wiki/Changelog
+### CachyOS Proton — the base
 
+Everything about this build's performance comes from
+**[CachyOS/proton-cachyos](https://github.com/CachyOS/proton-cachyos)**. This fork is
+based on their `cachyos-11.0-20260703-slr` release and carries their entire tree:
+their Wine patches, scheduler and thread-priority work, DXVK/VKD3D variants,
+`dxvk-sarek`, `d7vk`, low-latency layers, FEX, NVIDIA libraries, protonfixes and much
+more.
 
-Obtaining Proton sources
-------------------------
+Huge thanks to the CachyOS team and to everyone whose patches land in their Wine tree —
+including **Etaash Mathamsetty**, **Stelios Tsampas** (loathingkernel), **M0n7y5**,
+**NelloKudo**, **Rémi Bernon**, **Paul Gofman**, and many others.
 
-Acquire Proton's source by cloning <https://github.com/ValveSoftware/Proton>
-and checking out the branch you desire.
+CachyOS Proton is itself built on **[Valve's Proton](https://github.com/ValveSoftware/Proton)**
+and **[Wine](https://www.winehq.org/)** — thanks to Valve, CodeWeavers, and the Wine
+project.
 
-You can clone the latest Proton to your system with this command:
+### Proton-RTSP — the streaming support
 
-```bash
-git clone --recurse-submodules https://github.com/ValveSoftware/Proton.git proton
-```
+The RTSP/live-media support is
+**[SpookySkeletons/proton-rtsp](https://github.com/SpookySkeletons/proton-rtsp)**.
+Thanks to **SpookySkeletons** for maintaining, rebasing and packaging the patchset, and
+for doing the work that makes livestreams play in VRChat at all.
 
-Be sure to update submodules when switching between branches:
+The media patchset itself is overwhelmingly the work of **Torge Matthies / Reyka
+Matthies** ([openglfreak](https://github.com/openglfreak)) — 69 of the 72 commits.
+Also **zhineng cao** (the `qcap` webcam fixes behind VRChat desktop selfie / upper-body
+tracking) and **kazu0617**. The superproject `enable rtsp` change is by
+**BabbleBones**.
 
-```bash
-git checkout experimental_6.3
-git submodule update --init --recursive
-```
+**If you only use one of these, use theirs, not mine.** This repo exists solely because
+I wanted CachyOS's optimizations *and* Spooky's RTSP support in a single build.
 
-If you want to change any subcomponent, now is the time to do so. For
-example, if you wish to make changes to Wine, you would apply them to the
-`wine/` directory.
+---
 
+## What this actually adds
 
-Building Proton
----------------
+Compared to stock `proton-cachyos`, exactly two things:
 
-Most of Proton builds inside the Proton SDK container with very few
-dependencies on the host side.
+1. The **`rtsp`, `rtp` and `rtpmanager`** GStreamer plugins are enabled
+   (`Makefile.in`), matching what Proton-RTSP ships.
+2. The **72-commit RTSP Wine patchset** is rebased on top of CachyOS's Wine.
 
-## Preparing the build environment
+Both trees are based on the same upstream Proton Wine
+(`experimental-bleeding-edge-11.0-20260609`), so this is a genuine rebase rather than a
+graft.
 
-You need either a Docker or a Podman setup. We highly recommend [the rootless
-Podman setup][rootless-podman]. Please refer to your distribution's
-documentation for setup instructions (e.g. Arch [Podman][arch-podman] /
-[Docker][arch-docker], Debian [Podman][debian-podman] /
-[Docker][debian-docker]).
+Tested in VRChat: RTSP streams work, and YouTube and movie worlds still work.
 
-[rootless-podman]: https://github.com/containers/podman/blob/main/docs/tutorials/rootless_tutorial.md
-[arch-podman]: https://wiki.archlinux.org/title/Podman
-[arch-docker]: https://wiki.archlinux.org/title/Docker
-[debian-podman]: https://wiki.debian.org/Podman
-[debian-docker]: https://wiki.debian.org/Docker
+---
 
+## Install
 
-## The Easy Way
-
-We provide a top-level Makefile which will execute most of the build commands
-for you.
-
-After checking out the repository and updating its submodules, assuming that
-you have a working Docker or Podman setup, you can build and install Proton
-with a simple:
+Download the `.tar.xz` from [Releases](../../releases) and extract it into your Steam
+compatibility tools directory:
 
 ```bash
-make install
+mkdir -p ~/.steam/steam/compatibilitytools.d
+tar -xf proton-cachyos-rtsp-*.tar.xz -C ~/.steam/steam/compatibilitytools.d/
 ```
 
-If your build system is missing dependencies, it will fail quickly with a clear
-error message.
-
-After the build finishes, you may need to restart the Steam client to see the
-new Proton tool. The tool's name in the Steam client will be based on the
-currently checked out branch of Proton. You can override this name using the
-`build_name` variable.
-
-See `make help` for other build targets and options.
-
-
-
-## Manual building
-
-### Configuring the build
+Flatpak Steam:
 
 ```bash
-mkdir ../build && cd ../build
-../proton/configure.sh --enable-ccache --build-name=my_build
+tar -xf proton-cachyos-rtsp-*.tar.xz -C ~/.var/app/com.valvesoftware.Steam/data/Steam/compatibilitytools.d/
 ```
 
-Running `configure.sh` will create a `Makefile` allowing you to build Proton.
-The scripts checks if containers are functional and prompt you if any
-host-side dependencies are missing. You should run the command from a
-directory created specifically for your build.
+Then **restart Steam**, and set VRChat → Properties → Compatibility →
+*proton-cachyos-rtsp-…*.
 
-The configuration script tries to discover a working Docker or Podman setup
-to use, but you can force a compatible engine with
-`--container-engine=<executable_name>`.
+### One extra step for YouTube/Twitch
 
-You can enable ccache with `--enable-cache` flag. This will mount your
-`$CCACHE_DIR` or `$HOME/.ccache` inside the container.
+Run this once, as Proton-RTSP also instructs:
 
-`--proton-sdk-image=registry.gitlab.steamos.cloud/proton/soldier/sdk:<version>`
-can be used to build with a custom version of the Proton SDK images.
-
-Check `--help` for other configuration options.
-
-NOTE: If **SELinux** is in use, the Proton build container may fail to access
-your user's files. This is caused by [SELinux's filesystem
-labels][selinux-labels]. You may pass the `--relabel-volumes` switch to
-configure to cause the [container engine to relabel its
-bind-mounts][bind-mounts] and allow access to those files from within the
-container. This can be dangerous when used with system directories. Proceed
-with caution and refer your container engine's manual.
-
-[selinux-labels]: https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/6/html/security-enhanced_linux/sect-security-enhanced_linux-working_with_selinux-selinux_contexts_labeling_files
-[bind-mounts]: https://docs.docker.com/storage/bind-mounts/
-
-
-### Building
-
-```
-make
-```
-
-**Important make targets:**
-
-`make install` - install Proton into your user's Steam directory, see the [install Proton
-locally](#install-proton-locally) section for details.
-
-`make redist` - create a redistribute build (`redist/`) that can be copied to
-`~/.steam/root/compatibilitytools.d/`.
-
-`make deploy` - create a deployment build (`deploy/`). This is what we use to
-deploy Proton to Steam users via Steamworks.
-
-`make module=<module> module` - build both 32- and 64-bit versions of the
-specified wine module. This allows rapid iteration on one module. This target
-is only useful after building Proton.
-
-`make dxvk` / `make vkd3d-proton` - rebuild DXVK / vkd3d-proton.
-
-
-### Figuring Out What Failed To Build
-
-Proton build system invokes builds of many subprojects in parallel. If one
-subprojects fails there can be thousands of lines printed by other sub-builds
-before the top level exits. This can make the real reason of the build failing
-hard to find.
-
-Appending `2>&1 | tee build.log` will log the full build output to a `build.log`
-file. Searching that file from the bottom up for occurrences of `Error` should
-point to the right area. E.g.:
-
-```
-make 2>&1 | tee build.log
-grep -n '] Error [0-9]' build.log
-```
-
-```
-11220:make: *** [../Makefile.in:465: /builds/proton/proton/build-dir/.kaldi-i386-configure] Error 1
-12427:make: *** [../Makefile.in:1323: deploy] Error 2
-```
-
-
-### Debug Builds
-
-To prevent symbol stripping add `UNSTRIPPED_BUILD=1` to the `make`
-invocation. This should be used only with a clean build directory.
-
-E.g.:
-
-```
-mkdir ../debug-proton-build && cd ../debug-proton-build
-../proton/configure.sh --enable-ccache --build-name=debug_build
-make UNSTRIPPED_BUILD=1 install
-```
-
-
-### ARM64 Builds
-
-You need an ARM64 build machine and pass `--target-arch=arm64` to `configure.sh`.
-
-It's not possible to use the resulting builds in x86 Steam running via FEX.
-
-
-Install Proton locally
-----------------------
-
-Steam ships with several versions of Proton, which games will use by default or
-that you can select in Steam Settings' Steam Play page. Steam also supports
-running games with local builds of Proton, which you can install on your
-machine.
-
-To install a local build of Proton into Steam, make a new directory in
-`~/.steam/root/compatibilitytools.d/` with a tool name of your choosing and
-place the directory containing your redistributable build under that path.
-
-The `make install` target will perform this task for you, installing the
-Proton build into the Steam folder for the current user. You will have to
-restart the Steam client for it to pick up on a new tool.
-
-A correct local tool installation should look similar to this:
-
-```
-compatibilitytools.d/my_proton/
-├── compatibilitytool.vdf
-├── filelock.py
-├── LICENSE
-├── proton
-├── proton_dist.tar
-├── toolmanifest.vdf
-├── user_settings.sample.py
-└── version
-```
-
-To enable your local build in Steam, go to the Steam Play section of the
-Settings window. If the build was correctly installed, you should see
-"proton-localbuild" in the drop-down list of compatibility tools.
-
-Each component of this software is used under the terms of their licenses.
-See the `LICENSE` files here, as well as the `LICENSE`, `COPYING`, etc files
-in each submodule and directory for details. If you distribute a built
-version of Proton to other users, you must adhere to the terms of these
-licenses.
-
-
-Debugging
----------
-
-Proton builds have their symbols stripped by default. You can switch to
-"debug" beta branch in Steam (search for Proton in your library,
-Properties... -> BETAS -> select "debug") or build without stripping (see
-[Debug Builds section](#debug-builds)).
-
-The symbols are provided through the accompanying `.debug` files which may
-need to be explicitly loaded by the debugging tools. For GDB there's a helper
-script `wine/tools/gdbinit.py` (source it) that provides `load-symbol-files`
-(or `lsf` for short) command which loads the symbols for all the mapped files.
-
-For tips on debugging see [docs/DEBUGGING-LINUX.md](docs/DEBUGGING-LINUX.md)
-and [docs/DEBUGGING-WINDOWS.md](docs/DEBUGGING-WINDOWS.md).
-
-
-`compile_commands.json`
------------------------
-
-For use with [clangd](https://clangd.llvm.org/) LSP server and similar tooling.
-
-Projects built using cmake or meson (e.g. vkd3d-proton) automatically come with
-`compile_commands.json`. Wine also generates the file on its own via `makedep`.
-
-Proton's build system collects all the `compile_commands.json` files in a build
-subdirectory named `compile_commands/`.
-
-The paths are translated to point to the real source (i.e. not the rsynced
-copy). It still may depend on build directory for things like auto-generated
-`config.h` though and for wine it may be beneficial to run `tools/make_requests`
-in you source directories as those changes are not committed.
-
-You can then configure your editor to use that file for clangd in a few ways:
-
-1) directly - some editors/plugins allow you to specify the path to `compile_commands.json`
-2) via `.clangd` file, e.g.
 ```bash
-cd src/proton/wine/
-cat > .clangd <<EOF
-CompileFlags:
-  CompilationDatabase: ../build/current-dev/compile_commands/wine-x86_64/
-EOF
+steam steam://unlockh264/
 ```
-3) by symlinking:
+
+---
+
+## Launch options / flags
+
+**This build adds exactly one flag of its own.** Everything else comes from CachyOS and
+from the projects they bundle.
+
+### Added here
+
+| Flag | Default | What it does |
+|---|---|---|
+| `PROTON_MEDIA_COMPRESSED_STREAMS=1` | off | Restores CachyOS's *compressed-first* media source. By default this build always hands decoded streams to the game, which is what the RTSP patchset expects. **You almost certainly do not need this** — it exists as a diagnostic if some non-VRChat title has video trouble. |
+
+### Everything else
+
+Do **not** treat the list below as complete. CachyOS frequently ships a new flag in a
+release before it reaches any README:
+
+- **Read the [CachyOS Proton releases page](https://github.com/CachyOS/proton-cachyos/releases)
+  first.** Each release documents its new options, and links out to the projects it
+  bundles — each of which has its own flags you can use here.
+- [CachyOS Proton repo](https://github.com/CachyOS/proton-cachyos)
+- [Proton-RTSP releases](https://github.com/SpookySkeletons/proton-rtsp/releases) — for
+  RTSP-specific notes and known issues
+
+Some of the bundled projects and their own documentation:
+
+- [Wayland / EM additions](https://github.com/Etaash-mathamsetty/Proton/blob/em-10/docs/EM-ADDITIONS.md)
+- [FSR4](https://github.com/Etaash-mathamsetty/Proton/blob/em-10/docs/FSR4.md)
+- [dxvk-sarek](https://github.com/pythonlover02/DXVK-Sarek#shader-compilation)
+- [dxvk-low-latency](https://github.com/netborg-afps/dxvk-low-latency#dxvk-low-latency)
+- [vkd3d-low-latency](https://github.com/netborg-afps/vkd3d-low-latency#vkd3d-low-latency)
+
+---
+
+## About CPU optimization (`x86_64` vs `v3`)
+
+**These builds are plain `x86_64` and run on any 64-bit CPU.** They are compiled with
+`-O3 -march=nocona -mtune=core-avx2` — byte-for-byte the same flags CachyOS uses for
+their recommended `x86_64` release.
+
+A few things worth knowing, because this is easy to get wrong:
+
+- **Running CachyOS does not make a Proton build v3.** Even on a system using the
+  `cachyos-v3` repos, the `proton-cachyos-slr` package comes from the plain `[cachyos]`
+  repo and is a baseline build. The v3 repos don't carry Proton at all.
+- **Building it yourself does not automatically optimize for your CPU.** The
+  architecture flags are pinned in `Makefile.in`; you'd have to override `CFLAGS`
+  explicitly.
+- **A v3 build gains less than you'd expect.** `Makefile.in` unconditionally appends
+  `-mno-avx -mno-avx2 -mno-avx512f` *after* `-march=`, so AVX2 — the headline feature of
+  x86-64-v3 — is disabled even in CachyOS's own v3 build. What's left is SSE4.x, POPCNT,
+  BMI1/2, LZCNT and MOVBE. Their v3 job also keeps Rust at `-Ctarget-cpu=nocona`.
+
+If you want a v3 build anyway, CachyOS's own release settings are:
+
 ```bash
-ln -s ../build/current-dev/compile_commands/wine-x86_64/compile_commands.json .
+CFLAGS="-O3 -march=x86-64-v3 -mtune=core-avx2" \
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=nocona" \
+../proton-cachyos-rtsp/configure.sh --container-engine=podman --build-name=my_build
 ```
 
+---
 
-Runtime Config Options
-----------------------
+## Building
 
-Proton can be tuned at runtime to help certain games run. The Steam client sets
-some options for known games using the `STEAM_COMPAT_CONFIG` variable.
-You can override these options using the environment variables described below.
+Needs Podman or Docker; everything else builds inside the Steam Runtime SDK container.
 
-The best way to set these environment overrides for all games is by renaming
-`user_settings.sample.py` to `user_settings.py` and modifying it appropriately.
-This file is located in the Proton installation directory in your Steam library
-(often `~/.steam/steam/steamapps/common/Proton #.#`).
+```bash
+git clone --recurse-submodules https://github.com/wundervrc/proton-cachyos-rtsp.git
+mkdir build && cd build
+CFLAGS="-O3 -march=nocona -mtune=core-avx2" \
+RUSTFLAGS="-Copt-level=3 -Ctarget-cpu=nocona" \
+../proton-cachyos-rtsp/configure.sh \
+    --container-engine=podman --enable-ccache \
+    --build-name=proton-cachyos-rtsp
+make -j$(nproc)          # or: make -j$(nproc) redist   to get a .tar.xz
+make install             # installs into ~/.steam/root/compatibilitytools.d/
+```
 
-If you want to change the runtime configuration for a specific game, you can
-use the `Set Launch Options` setting in the game's `Properties` dialog in the
-Steam client. Set the variable, followed by `%command%`. For example, input
-"`PROTON_USE_WINED3D=1 %command%`" to use the OpenGL-based wined3d renderer
-instead of the Vulkan-based DXVK renderer.
+> The `wine` submodule points at
+> [wundervrc/wine-cachyos-rtsp](https://github.com/wundervrc/wine-cachyos-rtsp)
+> (branch `rtsp-merge`), which is CachyOS's Wine with the RTSP patchset rebased on top.
+> Cloning **without** `--recurse-submodules` and initialising submodules from elsewhere
+> will silently give you a build with no RTSP support.
 
-To enable an option, set the variable to a non-`0` value.  To disable an
-option, set the variable to `0`. To use Steam's default configuration, do
-not specify the variable at all.
+Upstream Proton's original build documentation is preserved at
+[docs/README.upstream-proton.md](docs/README.upstream-proton.md). Detailed notes on how
+the merge was done — every conflict resolution, what was ruled out and why — are in
+[BUILD-NOTES.md](BUILD-NOTES.md).
 
-All of the below are runtime options. They do not effect permanent changes to
-the Wine prefix. Removing the option will revert to the previous behavior.
+---
 
-| Compat config string  | Environment Variable               | Description  |
-| :-------------------- | :--------------------------------- | :----------- |
-|                       | `PROTON_LOG`                       | Convenience method for dumping a useful debug log to `$PROTON_LOG_DIR/steam-$APPID.log`. Set to `1` to enable default logging, or set to a string to be appended to the default `WINEDEBUG` channels. |
-|                       | `PROTON_LOG_DIR`                   | Output log files into the directory specified. Defaults to your home directory. |
-|                       | `PROTON_WAIT_ATTACH`               | Wait for a debugger to attach to steam.exe before launching the game process. To attach to the game process at startup, debuggers should be set to follow child processes. |
-|                       | `PROTON_CRASH_REPORT_DIR`          | Write crash logs into this directory. Does not clean up old logs, so may eat all your disk space eventually. |
-| `wined3d`             | `PROTON_USE_WINED3D`               | Use OpenGL-based wined3d instead of Vulkan-based DXVK for d3d11, d3d10, and d3d9. |
-| `nod3d11`             | `PROTON_NO_D3D11`                  | Disable `d3d11.dll`, for d3d11 games which can fall back to and run better with d3d9. |
-| `nod3d10`             | `PROTON_NO_D3D10`                  | Disable `d3d10.dll` and `dxgi.dll`, for d3d10 games which can fall back to and run better with d3d9. |
-| `dxvkd3d8`            | `PROTON_DXVK_D3D8`                 | Use DXVK's `d3d8.dll`. |
-| `noesync`             | `PROTON_NO_ESYNC`                  | Do not use eventfd-based in-process synchronization primitives. |
-| `nofsync`             | `PROTON_NO_FSYNC`                  | Do not use futex-based in-process synchronization primitives. (Automatically disabled on systems with no `FUTEX_WAIT_MULTIPLE` support.) |
-|                       | `HOST_LC_ALL`                      | Set value to a locale to override all other system locale settings for a game.  This variable should be used instead of `LC_ALL`. |
-| `disablenvapi`        | `PROTON_DISABLE_NVAPI`             | Disable NVIDIA's NVAPI GPU support library. |
-| `nativevulkanloader`  |                                    | Use the Vulkan loader shipped with the game instead of Proton's built-in Vulkan loader. This breaks VR support, but is required by a few games. |
-| `forcelgadd`          | `PROTON_FORCE_LARGE_ADDRESS_AWARE` | Force Wine to enable the LARGE_ADDRESS_AWARE flag for all executables. Enabled by default. |
-| `heapdelayfree`       | `PROTON_HEAP_DELAY_FREE`           | Delay freeing some memory, to work around application use-after-free bugs. |
-| `gamedrive`           | `PROTON_SET_GAME_DRIVE`            | Create an S: drive which points to the Steam Library which contains the game. |
-| `noforcelgadd`        |                                    | Disable forcelgadd. If both this and `forcelgadd` are set, enabled wins. |
-| `oldglstr`            | `PROTON_OLD_GL_STRING`             | Set some driver overrides to limit the length of the GL extension string, for old games that crash on very long extension strings. |
-| `vkd3dfl12`           |                                    | Force the Direct3D 12 feature level to 12, regardless of driver support. |
-| `vkd3dbindlesstb`     |                                    | Put `force_bindless_texel_buffer` into `VKD3D_CONFIG`. |
-| `nomfdxgiman`         | `WINE_DO_NOT_CREATE_DXGI_DEVICE_MANAGER` | Enable hack to work around video issues in some games due to incomplete IMFDXGIDeviceManager support. |
-| `noopwr`              | `WINE_DISABLE_VULKAN_OPWR`               | Enable hack to disable Vulkan other process window rendering which sometimes causes issues on Wayland due to blit being one frame behind. |
-| `hidenvgpu`           | `PROTON_HIDE_NVIDIA_GPU`           | Force Nvidia GPUs to always be reported as AMD GPUs. Some games require this if they depend on Windows-only Nvidia driver functionality. See also DXVK's nvapiHack config, which only affects reporting from Direct3D. |
-|                       | `WINE_FULLSCREEN_INTEGER_SCALING`  | Enable integer scaling mode, to give sharp pixels when upscaling. |
-| `cmdlineappend:`      |                                    | Append the string after the colon as an argument to the game command. May be specified more than once. Escape commas and backslashes with a backslash. |
-| `xalia` or `noxalia`  | `PROTON_USE_XALIA`                 | Enable Xalia, a program that can add a gamepad UI for some keyboard/mouse interfaces, or set to 0 to disable. The default is to enable it dynamically based on window contents. |
-| `fnad3d11`            | `FNA3D_FORCE_DRIVER=D3D11`         | Force FNA to use D3D11 for rendering. |
-| `seccomp`             | `PROTON_USE_SECCOMP`               | **Note: Obsoleted in Proton 5.13.** In older versions, enable seccomp-bpf filter to emulate native syscalls, required for some DRM protections to work. |
-| `d9vk`                | `PROTON_USE_D9VK`                  | **Note: Obsoleted in Proton 5.0.** In older versions, use Vulkan-based DXVK instead of OpenGL-based wined3d for d3d9. |
+## Licensing
 
-<!-- Target:  GitHub Flavor Markdown.  To test locally:  pandoc -f markdown_github -t html README.md  -->
+Unchanged from upstream Proton and Wine. Each component is used under the terms of its
+own license; see `LICENSE`, `dist.LICENSE`, and the `LICENSE`/`COPYING` files in each
+submodule. If you redistribute a build, you must comply with those terms.
