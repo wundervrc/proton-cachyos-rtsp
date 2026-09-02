@@ -270,6 +270,21 @@ Pre-publish verification of the tarball: extracts to
 - Useful debug: `PROTON_LOG=1`, and `GST_DEBUG=3` (or `GST_DEBUG=rtspsrc:5`) in the launch
   options; log lands in `~/steam-<appid>.log`.
 
+## Field observations
+
+- **2026-09-02 (user):** YouTube playback in VRChat looks **higher quality with
+  `PROTON_MEDIA_COMPRESSED_STREAMS` unset** (i.e. on our default, decoded streams) than
+  with it set to `1` (CachyOS's compressed-first path). Supports keeping the default.
+  - Status: **observed, mechanism unconfirmed.** Not stated as fact in user-facing docs.
+  - Confound to rule out: YouTube adaptive bitrate means resolution varies run-to-run
+    independently of the flag.
+  - Hypothesis to test: with compressed-first the source advertises H.264/VP9/AV1 and the
+    game's MF topology must supply a decoder; if only H.264 is really available the player
+    may settle for a lower-quality rendition, whereas the decoded path goes through
+    GStreamer's full decoder set (libav / dav1d / vpx) and can carry a better stream.
+  - How to settle it: run once each way with `PROTON_LOG=1 GST_DEBUG=3 %command%` and
+    compare negotiated `width=`/`height=` and codec in `~/steam-438100.log`.
+
 ## Known differences / open risks
 
 **GStreamer version gap — the biggest remaining unknown.**
