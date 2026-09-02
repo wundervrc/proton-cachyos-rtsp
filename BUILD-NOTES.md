@@ -218,8 +218,10 @@ bind-mounted in. Host flags baked in by configure: `-O2 -march=nocona -mtune=cor
 - [x] `configure.sh` succeeded (podman auto-detected, ccache enabled)
 - [x] **Build SUCCEEDED first try** — `make -j16`, exit 0, zero compile errors. ~2h wall.
 - [x] `make install` → `~/.steam/steam/compatibilitytools.d/proton-cachyos-rtsp` (1.6 GB)
-- [ ] **Test in VRChat**: RTSP stream first, then a normal movie-world video (the thing that
-      broke last time). Restart Steam first, and run `steam steam://unlockh264/` once.
+- [x] **Tested in VRChat — WORKS.** RTSP streams play, and YouTube + movie worlds all still
+      work. Confirmed by the user 2026-09-02. No regression in normal video playback, which
+      was the thing that broke on the previous GE-Proton-based attempt.
+- [x] Pushed to the user's GitHub (see "Published forks" above)
 
 ### Build attempts log
 
@@ -249,9 +251,10 @@ bind-mounted in. Host flags baked in by configure: `-O2 -march=nocona -mtune=cor
 - Existing builds are untouched and still selectable for A/B:
   `proton-rtsp-11.0-20260609-1`, `proton-rtsp-11.0-20260609-2`, `GE-Proton11-5`,
   `GE-Proton10-33-rtsp24-1`
-- If normal (non-RTSP) video regresses, first thing to try:
-  `PROTON_MEDIA_COMPRESSED_STREAMS=1 %command%` — that restores CachyOS's compressed-first
-  media source and tells us whether my default-flip was right or wrong.
+- `PROTON_MEDIA_COMPRESSED_STREAMS=1 %command%` restores CachyOS's compressed-first media
+  source. **Tested both ways: streams, YouTube and movie worlds work either way.** So the
+  default-flip is not load-bearing for VRChat — it stays as insurance for other titles and
+  because it's the only thing that still reaches CachyOS's compressed-first code path.
 - Useful debug: `PROTON_LOG=1`, and `GST_DEBUG=3` (or `GST_DEBUG=rtspsrc:5`) in the launch
   options; log lands in `~/steam-<appid>.log`.
 
