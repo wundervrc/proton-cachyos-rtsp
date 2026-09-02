@@ -64,6 +64,18 @@ Tested in VRChat: RTSP streams work, and YouTube and movie worlds still work.
 
 ## Install
 
+### Arch / CachyOS (AUR)
+
+```bash
+yay -S proton-cachyos-rtsp-bin
+```
+
+(or `paru -S proton-cachyos-rtsp-bin`). This installs to
+`/usr/share/steam/compatibilitytools.d/` and sits happily alongside CachyOS's own
+`proton-cachyos-slr` package.
+
+### Manual (any distro)
+
 Download the `.tar.xz` from [Releases](../../releases) and extract it into your Steam
 compatibility tools directory:
 
