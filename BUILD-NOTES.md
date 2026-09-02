@@ -225,9 +225,21 @@ bind-mounted in. Host flags baked in by configure: `-O2 -march=nocona -mtune=cor
 
 ### Build attempts log
 
-| # | date | result | notes |
-|---|---|---|---|
-| 1 | 2026-09-02 | **success, exit 0** | first build of the merged tree; no compile errors at all |
+| # | date | build dir | flags | result | notes |
+|---|---|---|---|---|---|
+| 1 | 2026-09-02 | `build/` | `-O2 -march=nocona` (Makefile default) | success, exit 0 | first build; installed as `proton-cachyos-rtsp`; this is the one tested in game |
+| 2 | 2026-09-02 | `build-release/` | `-O3 -march=nocona -mtune=core-avx2` (matches CachyOS release CI) | success, exit 0 | shipped as the GitHub release; `make -j16 redist` → 323 MB `.tar.xz` |
+
+**Released:** <https://github.com/wundervrc/proton-cachyos-rtsp/releases/tag/proton-cachyos-rtsp-11.0-20260703-1>
+(tag `proton-cachyos-rtsp-11.0-20260703-1`, assets `.tar.xz` + `.sha512sum`).
+Release notes were drafted, reviewed and approved by the user before publishing.
+
+Pre-publish verification of the tarball: extracts to
+`proton-cachyos-rtsp-11.0-20260703-1/`, contains all six RTSP plugins
+(`libgstrtsp/rtp/rtpmanager.so` × i386 + x86_64), `sha512sum -c` passes, 0 make errors.
+
+> Build 2 has **not** been run in game yet — build 1 is what was tested. Same source,
+> different optimization level.
 
 ### Post-build verification (all passed)
 
