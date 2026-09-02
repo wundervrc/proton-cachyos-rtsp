@@ -104,8 +104,11 @@ git cherry-pick --empty=keep e3b1bcb2..a7fcac55
    CachyOS refactored the fail path into `media_source_release_streams()` /
    `media_source_destroy_parser()`. Taught `media_source_destroy_parser()` to tear down
    the RTSP `event_thread` right after `wg_parser_disconnect`, matching RTSP's order.
-   **This also fixes a latent bug in CachyOS's retry path**, which re-created the event
-   thread on `goto retry` without ever tearing it down.
+   **This avoids a hazard created by the merge itself:** CachyOS's `media_source.c` has no
+   event thread at all (the event thread is Spooky's), but its retry loop re-enters
+   `retry:` and re-creates the source's threads. Combining the two would have leaked a
+   thread and a handle on every retry. That is a merge artefact handled here — *not* a
+   pre-existing CachyOS bug.
 
 3. `dlls/winegstreamer/media_source.c` — commit `9d3c10dc` (per-stream work queues).
    Moved `MFUnlockWorkQueue(stream->async_commands_queue)` into
