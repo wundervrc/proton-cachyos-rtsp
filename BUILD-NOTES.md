@@ -282,6 +282,32 @@ Deliberately **not** downgrading CachyOS's GStreamer — that would throw away C
 create a huge conflict surface. Build and test first; only revisit if RTSP playback misbehaves
 in a way that smells like negotiation/buffering.
 
+## CPU targeting / optimization levels — settled
+
+CachyOS's release CI (`.github/workflows/release.yml`) builds three x86 variants:
+
+| variant | cflags | rustflags |
+|---|---|---|
+| `x86_64` (they recommend this) | `-O3 -march=nocona -mtune=core-avx2` | `-Copt-level=3 -Ctarget-cpu=nocona` |
+| `x86_64_v3` | `-O3 -march=x86-64-v3 -mtune=core-avx2` | `-Copt-level=3 -Ctarget-cpu=nocona` (unchanged!) |
+| `arm64` | default | default |
+
+CI passes these as `CFLAGS` / `RUSTFLAGS` env vars to `configure.sh`, which honours both
+(`configure.sh:210-211`).
+
+**Our release build uses the `x86_64` settings verbatim.** Attempt 1 accidentally used the
+Makefile default `-O2`; the release build (`build-release/`) is `-O3`, matching CachyOS.
+
+### The user's own system, for reference
+
+- `proton-cachyos-slr 1:11.0.20260703-1` is installed from the plain **`[cachyos]`** repo.
+  The `cachyos-v3` / `cachyos-core-v3` / `cachyos-extra-v3` repos **do not carry Proton at
+  all**, even though the rest of their system is v3.
+- Verified at the instruction level: `objdump -d` on that package's
+  `files/lib/wine/x86_64-unix/ntdll.so` finds **0** AVX2 instructions and 1164 SSE.
+  It is a baseline build.
+- Their CPU supports up to x86-64-v3 (not v4).
+
 ## Documentation convention
 
 Keep this file current as work proceeds. When something is tried and **ruled out**, don't
@@ -314,6 +340,23 @@ Struck-through items were considered, checked, and dismissed. Don't spend time o
   `PROTON_MEDIA_FORCE_GST=1` expecting it to matter for stream URLs.
 - ~~"Does the libsoup hook (`eef101d3`) need a build-time dependency added?"~~ **No.** It's
   `dlopen("libsoup-3.0.so")` at runtime, and CachyOS already builds libsoup as a `GST_GOOD_DEPENDS`.
+- ~~"We should ship an `x86_64_v3` build too, since the user runs CachyOS."~~ **No — decided
+  against, 2026-09-02, user agreed.** Three reasons, in order of weight:
+  1. `Makefile.in:104-123` appends `-mno-avx -mno-avx2 -mno-avx512f` to `x86_64_CFLAGS`
+     *unconditionally and after* `-march=`, and later GCC flags win. So **AVX2 — the
+     headline feature of x86-64-v3 — is disabled even in CachyOS's own v3 build.** What
+     remains over `nocona` is SSE4.1/4.2, POPCNT, BMI1/2, LZCNT, MOVBE.
+  2. CachyOS's v3 CI job keeps `rustflags` at `-Ctarget-cpu=nocona`, so Rust components
+     gain nothing either. DXVK is separately pinned at `-O3 -mno-avx`.
+  3. Proton's hot paths are the GPU driver, DXVK/vkd3d shader translation and the game —
+     not this C code. Unmeasurable in VRChat, and it would halve who can run the release.
+  Also note CachyOS never actually *recommended against* v3 — their release note says
+  "we have a lot of different packages that might cause confusion... be conservative and
+  use `x86_64`. Feel free to experiment." That's about choice-overload, not performance.
+  If it's ever wanted: `CFLAGS="-O3 -march=x86-64-v3 -mtune=core-avx2"` at configure time.
+- ~~"Building Proton yourself gives you CPU-optimized binaries because you're on CachyOS."~~
+  **False.** The arch flags are pinned in `Makefile.in`; the host CPU and the distro's
+  repo tier have no effect. You must override `CFLAGS` explicitly.
 - ~~"`libtool: error: Could not determine the host path corresponding to ...` in the build log
   means the build is broken."~~ **No.** These come from vkd3d's libtool and always end with
   `Continuing, but uninstalled executables may not work.` They are benign and appear in stock
