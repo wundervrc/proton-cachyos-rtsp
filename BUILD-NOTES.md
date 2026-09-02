@@ -272,18 +272,27 @@ Pre-publish verification of the tarball: extracts to
 
 ## Field observations
 
-- **2026-09-02 (user):** YouTube playback in VRChat looks **higher quality with
-  `PROTON_MEDIA_COMPRESSED_STREAMS` unset** (i.e. on our default, decoded streams) than
-  with it set to `1` (CachyOS's compressed-first path). Supports keeping the default.
-  - Status: **observed, mechanism unconfirmed.** Not stated as fact in user-facing docs.
-  - Confound to rule out: YouTube adaptive bitrate means resolution varies run-to-run
-    independently of the flag.
-  - Hypothesis to test: with compressed-first the source advertises H.264/VP9/AV1 and the
-    game's MF topology must supply a decoder; if only H.264 is really available the player
-    may settle for a lower-quality rendition, whereas the decoded path goes through
-    GStreamer's full decoder set (libav / dav1d / vpx) and can carry a better stream.
-  - How to settle it: run once each way with `PROTON_LOG=1 GST_DEBUG=3 %command%` and
-    compare negotiated `width=`/`height=` and codec in `~/steam-438100.log`.
+- **2026-09-02 (user): CONFIRMED — `PROTON_MEDIA_COMPRESSED_STREAMS=1` degrades YouTube
+  quality in VRChat.** On the default (flag unset, decoded streams) YouTube is "crystal
+  clear"; with the flag set to `1` (CachyOS's compressed-first path) it is blurry.
+  Tested both ways, twice each, consistent. The adaptive-bitrate confound is ruled out by
+  repetition and by the size of the difference.
+  - **This vindicates the decoded-streams default** (`b9eeaf79b5a`). It is not just
+    theoretical safety for live RTSP sources — it is a visible quality win for YouTube.
+  - **Implication for stock CachyOS Proton:** stock `proton-cachyos` has no such flag and
+    is *always* compressed-first, so it presumably shows the same blurry YouTube in
+    VRChat. Worth reporting upstream to CachyOS if anyone wants to chase it.
+  - Mechanism still unconfirmed; deliberately **not** asserted in user-facing docs. The
+    likely area is `wg_parser.c`: `stream->codec_caps` is captured once in the
+    pad-added callback from `gst_pad_query_caps()` / `gst_pad_get_current_caps()`, and
+    `wg_parser_stream_get_codec_format()` reports the media type from those caps. For an
+    adaptive (HLS/DASH) source those initial caps can describe an early low-resolution
+    variant, which would fix the advertised media type — and hence the game's texture
+    size — at that low resolution. The decoded path instead reports `current_caps`, which
+    tracks what is actually flowing. Note the existing upstream comment right there about
+    compressed pads not answering CAPS queries correctly through `hlsdemux`.
+  - To confirm if ever wanted: `PROTON_LOG=1 GST_DEBUG=3 %command%`, compare negotiated
+    `width=`/`height=` in `~/steam-438100.log` between the two modes.
 
 ## Known differences / open risks
 

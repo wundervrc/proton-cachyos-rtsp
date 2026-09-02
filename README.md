@@ -100,7 +100,7 @@ from the projects they bundle.
 
 | Flag | Default | What it does |
 |---|---|---|
-| `PROTON_MEDIA_COMPRESSED_STREAMS=1` | off | Restores CachyOS's *compressed-first* media source. By default this build always hands decoded streams to the game, which is what the RTSP patchset expects. **You almost certainly do not need this** — it exists as a diagnostic if some non-VRChat title has video trouble. |
+| `PROTON_MEDIA_COMPRESSED_STREAMS=1` | off | Restores CachyOS's *compressed-first* media source. By default this build always hands decoded streams to the game, which is what the RTSP patchset expects. **Leave this off for VRChat** — with it on, YouTube playback is noticeably blurry; on the default it is crystal clear (tested both ways, twice each). It exists only as a diagnostic if some non-VRChat title has video trouble. |
 
 ### Everything else
 
