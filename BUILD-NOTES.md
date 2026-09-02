@@ -129,6 +129,11 @@ git cherry-pick --empty=keep e3b1bcb2..a7fcac55
 **Plus one deliberate behavioral change of mine** — commit `b9eeaf79b5a`
 `winegstreamer: Default to decoded streams for the RTSP media path.`
 
+Decoded output is **upstream Proton's own default** — `wg_parser_create(FALSE, FALSE)` at
+the merge base `e3b1bcb2`, and the RTSP series never touches that line (`git log -S`
+across all 72 commits returns nothing). So this is not a Spooky/openglfreak design choice
+we are preserving; it is stock Proton behaviour that CachyOS diverged from.
+
 CachyOS carries `b18ed3f9440 winegstreamer: Retry media source creation with decoded
 streams` (NelloKudo — **CachyOS-only, not upstream Proton**), which makes the media
 source expose *native compressed* stream types first and only fall back to decoded
